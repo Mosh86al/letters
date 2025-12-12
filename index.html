@@ -99,6 +99,73 @@
             font-size: 1.1em;
         }
         
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(145deg, #27ae60, #229954);
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .log-container {
+            margin-top: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            line-height: 1.5;
+            display: none;
+        }
+        
+        .log-container.visible {
+            display: block;
+        }
+        
+        .log-entry {
+            margin: 3px 0;
+            padding: 2px 0;
+        }
+        
+        .log-success { color: #00ff00; }
+        .log-error { color: #ff6b6b; }
+        .log-warning { color: #ffd93d; }
+        .log-info { color: #6bcfff; }
+        
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -126,6 +193,14 @@
         
         <div class="alphabet-grid" id="alphabetGrid"></div>
         <p class="info" id="infoText">טוען קבצי אודיו...</p>
+        
+        <div class="button-group">
+            <button class="btn btn-primary" id="refreshBtn">🔄 טען מחדש</button>
+            <button class="btn btn-success" id="toggleLogBtn">📋 הצג/הסתר לוג</button>
+            <button class="btn btn-success" id="downloadLogBtn">💾 הורד לוג</button>
+        </div>
+        
+        <div class="log-container" id="logContainer"></div>
     </div>
 
     <script>
@@ -161,18 +236,85 @@
 
         const grid = document.getElementById('alphabetGrid');
         const infoText = document.getElementById('infoText');
+        const logContainer = document.getElementById('logContainer');
+        const toggleLogBtn = document.getElementById('toggleLogBtn');
+        const downloadLogBtn = document.getElementById('downloadLogBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        
+        let logEntries = [];
+
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('he-IL');
+            const entry = `[${timestamp}] ${message}`;
+            logEntries.push(entry);
+            
+            const logDiv = document.createElement('div');
+            logDiv.className = `log-entry log-${type}`;
+            logDiv.textContent = entry;
+            logContainer.appendChild(logDiv);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            console.log(entry);
+        }
+
+        toggleLogBtn.addEventListener('click', () => {
+            logContainer.classList.toggle('visible');
+        });
+
+        downloadLogBtn.addEventListener('click', () => {
+            const logText = logEntries.join('\n');
+            const blob = new Blob([logText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `hebrew-alphabet-log-${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            addLog('✅ הלוג הורד בהצלחה', 'success');
+        });
+
+        refreshBtn.addEventListener('click', async () => {
+            addLog('🔄 ריענון ידני מופעל...', 'info');
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ טוען...';
+            
+            hebrewAlphabet.forEach(item => item.audioData = null);
+            updateUI();
+            
+            await loadAudioFiles();
+            
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = '🔄 טען מחדש';
+            
+            const loadedCount = hebrewAlphabet.filter(item => item.audioData).length;
+            alert(`✓ הושלם!\n${loadedCount}/27 קבצי אודיו נטענו`);
+        });
 
         async function loadAudioFiles() {
-            console.log('🎵 מתחיל לטעון קבצי אודיו...');
+            addLog('🎵 מתחיל לטעון קבצי אודיו...', 'info');
+            addLog(`🌐 URL בסיס: ${window.location.origin}${window.location.pathname}`, 'info');
+            addLog(`⏰ זמן: ${new Date().toLocaleString('he-IL')}`, 'info');
             
             const loadPromises = hebrewAlphabet.map(async (item) => {
                 const fileName = `${item.num}.mp3`;
                 
                 try {
-                    const response = await fetch(fileName);
+                    addLog(`🔍 מנסה לטעון: ${fileName}`, 'info');
+                    
+                    const response = await fetch(fileName, { 
+                        cache: 'no-cache',
+                        headers: {
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    addLog(`📡 ${fileName}: סטטוס ${response.status} ${response.statusText}`, response.ok ? 'info' : 'warning');
                     
                     if (response.ok) {
                         const blob = await response.blob();
+                        addLog(`📦 ${fileName}: גודל ${(blob.size / 1024).toFixed(1)} KB, טיפוס ${blob.type}`, 'info');
                         
                         if (blob.size > 0) {
                             const audioData = await new Promise((resolve) => {
@@ -182,11 +324,19 @@
                             });
                             
                             item.audioData = audioData;
-                            console.log(`✅ ${fileName} נטען בהצלחה`);
+                            addLog(`✅ ${fileName} נטען בהצלחה עבור אות ${item.letter}`, 'success');
+                        } else {
+                            addLog(`⚠️ ${fileName} ריק (0 KB)`, 'warning');
                         }
+                    } else {
+                        addLog(`⚠️ ${fileName} לא נמצא (404)`, 'warning');
                     }
                 } catch (error) {
-                    console.log(`⚠️ ${fileName} לא נמצא`);
+                    addLog(`❌ שגיאה בטעינת ${fileName}: ${error.message}`, 'error');
+                }
+                
+                if (!item.audioData) {
+                    addLog(`⚠️ אות ${item.letter} (${item.num}) תשתמש ב-TTS`, 'warning');
                 }
             });
             
@@ -195,7 +345,11 @@
             updateUI();
             
             const loadedCount = hebrewAlphabet.filter(item => item.audioData).length;
-            console.log(`📊 נטענו ${loadedCount}/27 קבצי אודיו`);
+            addLog(`📊 סיכום: ${loadedCount}/27 קבצי אודיו נטענו בהצלחה`, loadedCount > 0 ? 'success' : 'error');
+            
+            if (loadedCount === 0) {
+                addLog('⚠️ אף קובץ לא נטען! אולי GitHub Pages עדיין מעדכן? חכה 2-3 דקות ונסה שוב', 'warning');
+            }
         }
 
         function updateUI() {
@@ -203,14 +357,17 @@
             buttons.forEach((btn, index) => {
                 if (hebrewAlphabet[index].audioData) {
                     btn.classList.add('has-audio');
+                } else {
+                    btn.classList.remove('has-audio');
                 }
             });
             
             const audioCount = hebrewAlphabet.filter(item => item.audioData).length;
-            infoText.textContent = `לחץ על אות לשמוע | ${audioCount}/27 קבצי אודיו זמינים`;
+            infoText.textContent = `לחץ על אות לשמוע | ${audioCount}/27 קבצי אודיו זמינים (ירוק = אודיו, אפור = TTS)`;
         }
 
         function speak(text) {
+            addLog(`🗣️ משתמש ב-TTS עבור: ${text}`, 'info');
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US';
             utterance.rate = 0.8;
@@ -220,10 +377,25 @@
 
         function playSound(index) {
             const item = hebrewAlphabet[index];
+            addLog(`👆 לחיצה על אות ${item.letter} (${item.num})`, 'info');
             
             if (item.audioData) {
+                addLog(`🔊 מנגן אודיו...`, 'success');
                 const audio = new Audio(item.audioData);
-                audio.play().catch(() => speak(item.sound));
+                
+                audio.onended = () => {
+                    addLog(`⏹️ הסתיים`, 'info');
+                };
+                
+                audio.onerror = () => {
+                    addLog(`❌ שגיאת נגינה, עובר ל-TTS`, 'error');
+                    speak(item.sound);
+                };
+                
+                audio.play().catch(() => {
+                    addLog(`❌ שגיאה בהפעלה, עובר ל-TTS`, 'error');
+                    speak(item.sound);
+                });
             } else {
                 speak(item.sound);
             }
@@ -250,6 +422,7 @@
         });
 
         // טעינה אוטומטית
+        addLog('🚀 אתחול אפליקציה...', 'success');
         loadAudioFiles();
     </script>
 </body>
