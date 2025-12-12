@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אלפבית עברי עם הגייה</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .alphabet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .letter-btn {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: none;
+            border-radius: 15px;
+            padding: 25px;
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .letter-main {
+            display: block;
+        }
+        
+        .letter-number {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 0.4em;
+            color: #999;
+            font-weight: normal;
+        }
+        
+        .letter-btn.has-audio .letter-number {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .letter-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .letter-btn:active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .letter-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .letter-btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .info {
+            text-align: center;
+            margin-top: 20px;
+            color: #555;
+            font-size: 1.1em;
+        }
+        
+        .refresh-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 30px;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .debug-btn {
+            display: block;
+            margin: 10px auto 0;
+            padding: 10px 20px;
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(231, 76, 60, 0.3);
+        }
+        
+        .debug-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .alphabet-grid {
+                grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+                gap: 10px;
+            }
+            
+            .letter-btn {
+                padding: 15px;
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔤 אלפבית עברי עם הגייה 🔊</h1>
+        
+        <div class="alphabet-grid" id="alphabetGrid"></div>
+        <p class="info" id="infoText">לחץ על כל אות כדי לשמוע את ההגייה שלה</p>
+        <button class="refresh-btn" id="refreshBtn">🔄 טען מחדש קבצים מ-GitHub</button>
+        <button class="debug-btn" id="debugBtn">📝 הורד לוג Debug</button>
+    </div>
+
+    <script>
+        // GitHub Repository עם קבצי האודיו והקונפיגורציה
+        const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Mosh86al/letters/main';
+        
+        const hebrewAlphabet = [
+            { num: 1, letter: 'א', sound: 'alef', audioData: null },
+            { num: 2, letter: 'ב', sound: 'bet', audioData: null },
+            { num: 3, letter: 'ג', sound: 'gimel', audioData: null },
+            { num: 4, letter: 'ד', sound: 'dalet', audioData: null },
+            { num: 5, letter: 'ה', sound: 'he', audioData: null },
+            { num: 6, letter: 'ו', sound: 'vav', audioData: null },
+            { num: 7, letter: 'ז', sound: 'zayin', audioData: null },
+            { num: 8, letter: 'ח', sound: 'chet', audioData: null },
+            { num: 9, letter: 'ט', sound: 'tet', audioData: null },
+            { num: 10, letter: 'י', sound: 'yod', audioData: null },
+            { num: 11, letter: 'כ', sound: 'kaf', audioData: null },
+            { num: 12, letter: 'ל', sound: 'lamed', audioData: null },
+            { num: 13, letter: 'מ', sound: 'mem', audioData: null },
+            { num: 14, letter: 'נ', sound: 'nun', audioData: null },
+            { num: 15, letter: 'ס', sound: 'samech', audioData: null },
+            { num: 16, letter: 'ע', sound: 'ayin', audioData: null },
+            { num: 17, letter: 'פ', sound: 'pe', audioData: null },
+            { num: 18, letter: 'צ', sound: 'tsadi', audioData: null },
+            { num: 19, letter: 'ק', sound: 'kof', audioData: null },
+            { num: 20, letter: 'ר', sound: 'resh', audioData: null },
+            { num: 21, letter: 'ש', sound: 'shin', audioData: null },
+            { num: 22, letter: 'ת', sound: 'tav', audioData: null },
+            { num: 23, letter: 'ך', sound: 'kaf sofit', audioData: null },
+            { num: 24, letter: 'ם', sound: 'mem sofit', audioData: null },
+            { num: 25, letter: 'ן', sound: 'nun sofit', audioData: null },
+            { num: 26, letter: 'ף', sound: 'pe sofit', audioData: null },
+            { num: 27, letter: 'ץ', sound: 'tsadi sofit', audioData: null }
+        ];
+
+        const grid = document.getElementById('alphabetGrid');
+        const infoText = document.getElementById('infoText');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const debugBtn = document.getElementById('debugBtn');
+        
+        let playMode = 'auto';
+        let loadingAudio = false;
+        let loadingConfig = false;
+        let debugLog = [];
+        
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString('he-IL');
+            const logEntry = `[${timestamp}] ${message}`;
+            debugLog.push(logEntry);
+            console.log(message);
+        }
+
+        async function loadConfigFromDrive() {
+            loadingConfig = true;
+            updateInfoText();
+            
+            addLog('🔍 מחפש קובץ config.json...');
+            
+            try {
+                const possibleNames = ['config.json', 'hebrew.json', 'alphabet.json', 'settings.json'];
+                
+                for (const fileName of possibleNames) {
+                    try {
+                        const configUrl = `${GITHUB_BASE_URL}/${fileName}`;
+                        addLog(`🔍 מנסה לטעון: ${configUrl}`);
+                        
+                        const response = await fetch(configUrl, {
+                            method: 'GET',
+                            mode: 'cors',
+                            cache: 'no-cache'
+                        });
+                        addLog(`📡 Response: ${response.status} ${response.statusText}`);
+                        
+                        if (response.ok) {
+                            const config = await response.json();
+                            applyConfig(config);
+                            addLog(`✅ קונפיגורציה נטענה מ-GitHub: ${fileName}`);
+                            break;
+                        }
+                    } catch (error) {
+                        addLog(`❌ שגיאה ב-${fileName}: ${error.message}`);
+                    }
+                }
+            } catch (error) {
+                addLog(`❌ שגיאה כללית בטעינת קונפיגורציה: ${error.message}`);
+            }
+            
+            loadingConfig = false;
+            updateInfoText();
+        }
+        
+        function applyConfig(config) {
+            if (config.alphabet && Array.isArray(config.alphabet)) {
+                config.alphabet.forEach((item, index) => {
+                    if (hebrewAlphabet[index] && item.sound) {
+                        hebrewAlphabet[index].sound = item.sound;
+                    }
+                });
+            }
+        }
+
+        async function loadAudioFromDrive() {
+            loadingAudio = true;
+            updateInfoText();
+            
+            addLog('🎵 מחפש קבצי אודיו ב-GitHub...');
+            
+            for (let i = 0; i < hebrewAlphabet.length; i++) {
+                const item = hebrewAlphabet[i];
+                
+                const possibleFiles = [
+                    `${item.num}.mp3`,
+                    `${item.num}.wav`,
+                    `${item.num}.m4a`,
+                    `${item.num}.ogg`
+                ];
+                
+                for (const fileName of possibleFiles) {
+                    try {
+                        const audioUrl = `${GITHUB_BASE_URL}/${fileName}`;
+                        addLog(`🔍 מנסה לטעון: ${audioUrl}`);
+                        
+                        const response = await fetch(audioUrl, {
+                            method: 'GET',
+                            mode: 'cors',
+                            cache: 'no-cache'
+                        });
+                        addLog(`📡 Response: ${response.status} ${response.statusText} for ${fileName}`);
+                        
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            addLog(`📦 blob: type=${blob.type}, size=${blob.size} bytes`);
+                            
+                            if (blob.type.startsWith('audio/') || blob.size > 1000) {
+                                addLog(`✅ קובץ תקין! מתחיל המרה...`);
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    item.audioData = e.target.result;
+                                    updateButtonStates();
+                                    addLog(`✅✅ הושלם: ${fileName} → ${item.letter}`);
+                                };
+                                reader.onerror = (e) => {
+                                    addLog(`❌ שגיאה בהמרה: ${e}`);
+                                };
+                                reader.readAsDataURL(blob);
+                                break;
+                            } else {
+                                addLog(`⚠️ blob לא תקין`);
+                            }
+                        }
+                    } catch (error) {
+                        addLog(`❌ שגיאה: ${error.message}`);
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            }
+            
+            loadingAudio = false;
+            updateButtonStates();
+            
+            const loadedCount = hebrewAlphabet.filter(item => item.audioData).length;
+            addLog(`📊 סיכום: ${loadedCount}/27 קבצי אודיו נטענו`);
+        }
+        
+        function updateButtonStates() {
+            const buttons = document.querySelectorAll('.letter-btn');
+            buttons.forEach((btn, index) => {
+                if (hebrewAlphabet[index].audioData) {
+                    btn.classList.add('has-audio');
+                } else {
+                    btn.classList.remove('has-audio');
+                }
+            });
+            updateInfoText();
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8;
+            utterance.pitch = 1;
+            speechSynthesis.speak(utterance);
+        }
+        
+        function playAudio(audioData) {
+            if (audioData) {
+                const audio = new Audio(audioData);
+                audio.play().catch(e => console.error('Audio play error:', e));
+            } else {
+                alert('לא נטען קובץ אודיו לאות זו');
+            }
+        }
+        
+        function playSound(index) {
+            const item = hebrewAlphabet[index];
+            
+            if (item.audioData) {
+                playAudio(item.audioData);
+            } else {
+                speak(item.sound);
+            }
+        }
+        
+        function updateInfoText() {
+            const audioCount = hebrewAlphabet.filter(item => item.audioData).length;
+            
+            if (loadingConfig) {
+                infoText.textContent = '⏳ טוען הגדרות מ-GitHub...';
+            } else if (loadingAudio) {
+                infoText.textContent = '⏳ טוען קבצי אודיו מ-GitHub...';
+            } else {
+                infoText.textContent = `לחץ על אות לשמוע | ${audioCount}/27 קבצי אודיו נטענו (ירוק = אודיו, אפור = TTS)`;
+            }
+        }
+        
+        async function initializeApp() {
+            debugLog = [];
+            addLog('🔄 מתחיל לטעון קבצים מ-GitHub...');
+            addLog(`📍 GitHub URL: ${GITHUB_BASE_URL}`);
+            
+            await loadConfigFromDrive();
+            await loadAudioFromDrive();
+            
+            updateButtonStates();
+        }
+        
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ טוען...';
+            
+            hebrewAlphabet.forEach(item => {
+                item.audioData = null;
+            });
+            
+            await initializeApp();
+            
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = '🔄 טען מחדש קבצים מ-GitHub';
+            
+            const loadedCount = hebrewAlphabet.filter(item => item.audioData).length;
+            alert(`✓ טעינה הושלמה!\n${loadedCount}/27 קבצי אודיו נטענו`);
+        });
+        
+        debugBtn.addEventListener('click', () => {
+            const logText = debugLog.join('\n');
+            const blob = new Blob([logText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `debug-log-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('📝 קובץ הלוג הורד בהצלחה!');
+        });
+
+        hebrewAlphabet.forEach((item, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'letter-btn';
+            
+            const letterNumber = document.createElement('span');
+            letterNumber.className = 'letter-number';
+            letterNumber.textContent = item.num;
+            
+            const letterMain = document.createElement('span');
+            letterMain.className = 'letter-main';
+            letterMain.textContent = item.letter;
+            
+            btn.appendChild(letterNumber);
+            btn.appendChild(letterMain);
+            
+            btn.addEventListener('click', () => {
+                playSound(index);
+            });
+            
+            grid.appendChild(btn);
+        });
+        
+        initializeApp();
+    </script>
+</body>
+</html>
