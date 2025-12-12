@@ -1,0 +1,114 @@
+{
+  "version": "1.0",
+  "date": "2025-12-12T03:55:46.119Z",
+  "alphabet": [
+    {
+      "letter": "א",
+      "sound": "alef"
+    },
+    {
+      "letter": "ב",
+      "sound": "bet"
+    },
+    {
+      "letter": "ג",
+      "sound": "gimel"
+    },
+    {
+      "letter": "ד",
+      "sound": "dalet"
+    },
+    {
+      "letter": "ה",
+      "sound": "he"
+    },
+    {
+      "letter": "ו",
+      "sound": "vav"
+    },
+    {
+      "letter": "ז",
+      "sound": "zain"
+    },
+    {
+      "letter": "ח",
+      "sound": "Khcaa"
+    },
+    {
+      "letter": "ט",
+      "sound": "tett"
+    },
+    {
+      "letter": "י",
+      "sound": "yod"
+    },
+    {
+      "letter": "כ",
+      "sound": "caaf"
+    },
+    {
+      "letter": "ל",
+      "sound": "lame'ed"
+    },
+    {
+      "letter": "מ",
+      "sound": "ma'am"
+    },
+    {
+      "letter": "נ",
+      "sound": "noun"
+    },
+    {
+      "letter": "ס",
+      "sound": "saame'ech"
+    },
+    {
+      "letter": "ע",
+      "sound": "ayin"
+    },
+    {
+      "letter": "פ",
+      "sound": "pae"
+    },
+    {
+      "letter": "צ",
+      "sound": "tsadi"
+    },
+    {
+      "letter": "ק",
+      "sound": "koof"
+    },
+    {
+      "letter": "ר",
+      "sound": "resh"
+    },
+    {
+      "letter": "ש",
+      "sound": "shin"
+    },
+    {
+      "letter": "ת",
+      "sound": "tav"
+    },
+    {
+      "letter": "ך",
+      "sound": "kaf sofit"
+    },
+    {
+      "letter": "ם",
+      "sound": "ma'am sofit"
+    },
+    {
+      "letter": "ן",
+      "sound": "nun sofit"
+    },
+    {
+      "letter": "ף",
+      "sound": "pe sofit"
+    },
+    {
+      "letter": "ץ",
+      "sound": "tsadi sofit"
+    }
+  ]
+}
