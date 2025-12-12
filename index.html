@@ -92,73 +92,11 @@
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
         
-        .letter-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.5);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        
-        .letter-btn:active::before {
-            width: 300px;
-            height: 300px;
-        }
-        
         .info {
             text-align: center;
             margin-top: 20px;
             color: #555;
             font-size: 1.1em;
-        }
-        
-        .refresh-btn {
-            display: block;
-            margin: 20px auto 0;
-            padding: 12px 30px;
-            background: linear-gradient(145deg, #3498db, #2980b9);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
-        }
-        
-        .refresh-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
-        }
-        
-        .refresh-btn:active {
-            transform: translateY(-1px);
-        }
-        
-        .debug-btn {
-            display: block;
-            margin: 10px auto 0;
-            padding: 10px 20px;
-            background: linear-gradient(145deg, #e74c3c, #c0392b);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(231, 76, 60, 0.3);
-        }
-        
-        .debug-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
         }
         
         @media (max-width: 600px) {
@@ -187,15 +125,10 @@
         <h1>🔤 אלפבית עברי עם הגייה 🔊</h1>
         
         <div class="alphabet-grid" id="alphabetGrid"></div>
-        <p class="info" id="infoText">לחץ על כל אות כדי לשמוע את ההגייה שלה</p>
-        <button class="refresh-btn" id="refreshBtn">🔄 טען מחדש קבצים מ-GitHub</button>
-        <button class="debug-btn" id="debugBtn">📝 הורד לוג Debug</button>
+        <p class="info" id="infoText">טוען קבצי אודיו...</p>
     </div>
 
     <script>
-        // GitHub Repository עם קבצי האודיו והקונפיגורציה
-        const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Mosh86al/letters/main';
-        
         const hebrewAlphabet = [
             { num: 1, letter: 'א', sound: 'alef', audioData: null },
             { num: 2, letter: 'ב', sound: 'bet', audioData: null },
@@ -228,144 +161,53 @@
 
         const grid = document.getElementById('alphabetGrid');
         const infoText = document.getElementById('infoText');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const debugBtn = document.getElementById('debugBtn');
-        
-        let playMode = 'auto';
-        let loadingAudio = false;
-        let loadingConfig = false;
-        let debugLog = [];
-        
-        function addLog(message) {
-            const timestamp = new Date().toLocaleTimeString('he-IL');
-            const logEntry = `[${timestamp}] ${message}`;
-            debugLog.push(logEntry);
-            console.log(message);
-        }
 
-        async function loadConfigFromDrive() {
-            loadingConfig = true;
-            updateInfoText();
+        async function loadAudioFiles() {
+            console.log('🎵 מתחיל לטעון קבצי אודיו...');
             
-            addLog('🔍 מחפש קובץ config.json...');
-            
-            try {
-                const possibleNames = ['config.json', 'hebrew.json', 'alphabet.json', 'settings.json'];
+            const loadPromises = hebrewAlphabet.map(async (item) => {
+                const fileName = `${item.num}.mp3`;
                 
-                for (const fileName of possibleNames) {
-                    try {
-                        const configUrl = `${GITHUB_BASE_URL}/${fileName}`;
-                        addLog(`🔍 מנסה לטעון: ${configUrl}`);
-                        
-                        const response = await fetch(configUrl, {
-                            method: 'GET',
-                            mode: 'cors',
-                            cache: 'no-cache'
-                        });
-                        addLog(`📡 Response: ${response.status} ${response.statusText}`);
-                        
-                        if (response.ok) {
-                            const config = await response.json();
-                            applyConfig(config);
-                            addLog(`✅ קונפיגורציה נטענה מ-GitHub: ${fileName}`);
-                            break;
-                        }
-                    } catch (error) {
-                        addLog(`❌ שגיאה ב-${fileName}: ${error.message}`);
-                    }
-                }
-            } catch (error) {
-                addLog(`❌ שגיאה כללית בטעינת קונפיגורציה: ${error.message}`);
-            }
-            
-            loadingConfig = false;
-            updateInfoText();
-        }
-        
-        function applyConfig(config) {
-            if (config.alphabet && Array.isArray(config.alphabet)) {
-                config.alphabet.forEach((item, index) => {
-                    if (hebrewAlphabet[index] && item.sound) {
-                        hebrewAlphabet[index].sound = item.sound;
-                    }
-                });
-            }
-        }
-
-        async function loadAudioFromDrive() {
-            loadingAudio = true;
-            updateInfoText();
-            
-            addLog('🎵 מחפש קבצי אודיו ב-GitHub...');
-            
-            for (let i = 0; i < hebrewAlphabet.length; i++) {
-                const item = hebrewAlphabet[i];
-                
-                const possibleFiles = [
-                    `${item.num}.mp3`,
-                    `${item.num}.wav`,
-                    `${item.num}.m4a`,
-                    `${item.num}.ogg`
-                ];
-                
-                for (const fileName of possibleFiles) {
-                    try {
-                        const audioUrl = `${GITHUB_BASE_URL}/${fileName}`;
-                        addLog(`🔍 מנסה לטעון: ${audioUrl}`);
-                        
-                        const response = await fetch(audioUrl, {
-                            method: 'GET',
-                            mode: 'cors',
-                            cache: 'no-cache'
-                        });
-                        addLog(`📡 Response: ${response.status} ${response.statusText} for ${fileName}`);
-                        
-                        if (response.ok) {
-                            const blob = await response.blob();
-                            addLog(`📦 blob: type=${blob.type}, size=${blob.size} bytes`);
-                            
-                            if (blob.type.startsWith('audio/') || blob.size > 1000) {
-                                addLog(`✅ קובץ תקין! מתחיל המרה...`);
-                                const reader = new FileReader();
-                                reader.onload = (e) => {
-                                    item.audioData = e.target.result;
-                                    updateButtonStates();
-                                    addLog(`✅✅ הושלם: ${fileName} → ${item.letter}`);
-                                };
-                                reader.onerror = (e) => {
-                                    addLog(`❌ שגיאה בהמרה: ${e}`);
-                                };
-                                reader.readAsDataURL(blob);
-                                break;
-                            } else {
-                                addLog(`⚠️ blob לא תקין`);
-                            }
-                        }
-                    } catch (error) {
-                        addLog(`❌ שגיאה: ${error.message}`);
-                    }
+                try {
+                    const response = await fetch(fileName);
                     
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        
+                        if (blob.size > 0) {
+                            const audioData = await new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onload = (e) => resolve(e.target.result);
+                                reader.readAsDataURL(blob);
+                            });
+                            
+                            item.audioData = audioData;
+                            console.log(`✅ ${fileName} נטען בהצלחה`);
+                        }
+                    }
+                } catch (error) {
+                    console.log(`⚠️ ${fileName} לא נמצא`);
                 }
-            }
+            });
             
-            loadingAudio = false;
-            updateButtonStates();
+            await Promise.all(loadPromises);
+            
+            updateUI();
             
             const loadedCount = hebrewAlphabet.filter(item => item.audioData).length;
-            addLog(`📊 סיכום: ${loadedCount}/27 קבצי אודיו נטענו`);
+            console.log(`📊 נטענו ${loadedCount}/27 קבצי אודיו`);
         }
-        
-        function updateButtonStates() {
+
+        function updateUI() {
             const buttons = document.querySelectorAll('.letter-btn');
             buttons.forEach((btn, index) => {
                 if (hebrewAlphabet[index].audioData) {
                     btn.classList.add('has-audio');
-                } else {
-                    btn.classList.remove('has-audio');
                 }
             });
-            updateInfoText();
+            
+            const audioCount = hebrewAlphabet.filter(item => item.audioData).length;
+            infoText.textContent = `לחץ על אות לשמוע | ${audioCount}/27 קבצי אודיו זמינים`;
         }
 
         function speak(text) {
@@ -375,82 +217,19 @@
             utterance.pitch = 1;
             speechSynthesis.speak(utterance);
         }
-        
-        function playAudio(audioData) {
-            if (audioData) {
-                const audio = new Audio(audioData);
-                audio.play().catch(e => console.error('Audio play error:', e));
-            } else {
-                alert('לא נטען קובץ אודיו לאות זו');
-            }
-        }
-        
+
         function playSound(index) {
             const item = hebrewAlphabet[index];
             
             if (item.audioData) {
-                playAudio(item.audioData);
+                const audio = new Audio(item.audioData);
+                audio.play().catch(() => speak(item.sound));
             } else {
                 speak(item.sound);
             }
         }
-        
-        function updateInfoText() {
-            const audioCount = hebrewAlphabet.filter(item => item.audioData).length;
-            
-            if (loadingConfig) {
-                infoText.textContent = '⏳ טוען הגדרות מ-GitHub...';
-            } else if (loadingAudio) {
-                infoText.textContent = '⏳ טוען קבצי אודיו מ-GitHub...';
-            } else {
-                infoText.textContent = `לחץ על אות לשמוע | ${audioCount}/27 קבצי אודיו נטענו (ירוק = אודיו, אפור = TTS)`;
-            }
-        }
-        
-        async function initializeApp() {
-            debugLog = [];
-            addLog('🔄 מתחיל לטעון קבצים מ-GitHub...');
-            addLog(`📍 GitHub URL: ${GITHUB_BASE_URL}`);
-            
-            await loadConfigFromDrive();
-            await loadAudioFromDrive();
-            
-            updateButtonStates();
-        }
-        
-        refreshBtn.addEventListener('click', async () => {
-            refreshBtn.disabled = true;
-            refreshBtn.textContent = '⏳ טוען...';
-            
-            hebrewAlphabet.forEach(item => {
-                item.audioData = null;
-            });
-            
-            await initializeApp();
-            
-            refreshBtn.disabled = false;
-            refreshBtn.textContent = '🔄 טען מחדש קבצים מ-GitHub';
-            
-            const loadedCount = hebrewAlphabet.filter(item => item.audioData).length;
-            alert(`✓ טעינה הושלמה!\n${loadedCount}/27 קבצי אודיו נטענו`);
-        });
-        
-        debugBtn.addEventListener('click', () => {
-            const logText = debugLog.join('\n');
-            const blob = new Blob([logText], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `debug-log-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            alert('📝 קובץ הלוג הורד בהצלחה!');
-        });
 
+        // יצירת כפתורי האותיות
         hebrewAlphabet.forEach((item, index) => {
             const btn = document.createElement('button');
             btn.className = 'letter-btn';
@@ -465,15 +244,13 @@
             
             btn.appendChild(letterNumber);
             btn.appendChild(letterMain);
-            
-            btn.addEventListener('click', () => {
-                playSound(index);
-            });
+            btn.addEventListener('click', () => playSound(index));
             
             grid.appendChild(btn);
         });
-        
-        initializeApp();
+
+        // טעינה אוטומטית
+        loadAudioFiles();
     </script>
 </body>
 </html>
